@@ -58,7 +58,7 @@ The Property Management System web application can be accessed through the link:
 
 ### Usage Instructions
 
-Change to the directory where `frontend_v11.py` is saved and run the frontend application by navigating to the directory containing `frontend_v11.py` and executing:
+Change to the directory where `frontend_v11.py` is saved and run the frontend application by executing:
 
 `streamlit run frontend_v11.py`
 
