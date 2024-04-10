@@ -104,7 +104,7 @@ def display_logo(url: str):
     st.markdown(f"""
         <div style="display: flex; align-items: center;">
             {logo_html}
-            <h1 style="margin: 0 0 0 50px;">Majestic Real Estate Management</h1>
+            <h1 style="margin: 0 0 0 50px;">Property Management System</h1>
         </div>
         <div class="space"></div>
         """, unsafe_allow_html=True)
