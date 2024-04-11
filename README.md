@@ -8,7 +8,7 @@ This comprehensive Property Management System is designed for efficient handling
 
 The Property Management System web application can be accessed through the link: [Property Management System Web Application](https://dsci551databasemanagementsystem-nirmcetzdi6hfzvhucgswj.streamlit.app/). This allows for direct interaction with the system via a web browser.
 
-## Frontend (Python) – `backend_v11.py`
+## Backend (Python) – `backend_v11.py`
 
 ### Features Include:
 
