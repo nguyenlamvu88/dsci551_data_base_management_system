@@ -323,7 +323,7 @@ def main():
     # Safely check if the user is authenticated, defaulting to False if the key doesn't exist
     is_authenticated = st.session_state.get("authenticated", False)
 
-    logo_url = "https://nguyenlamvu88.github.io/dsci551_data_base_management_system/landscape.jpg"
+    logo_url = "https://nguyenlamvu88.github.io/dsci551_data_base_management_system/landing_page_image.png"
     display_logo(logo_url)
 
     if is_authenticated:
