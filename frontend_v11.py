@@ -225,8 +225,8 @@ def display_image(data):
 def search_property_ui():
     st.subheader("🔍 Search for Properties")
     with st.form("search_form"):
-        city = st.text_input("City", help="case-insensitive")
-        state = st.text_input("State", help="case-insensitive")
+        city = st.text_input("City", help="partial match allowed, case-insensitive")
+        state = st.text_input("State", help="partial match allowed, case-insensitive")
         property_type = st.text_input("Type", help="sale or rent, case-insensitive")
         address = st.text_input("Address", help="partial match allowed, case-insensitive")
         custom_id = st.text_input("Custom ID")
@@ -241,11 +241,9 @@ def search_property_ui():
         unique_search_results = list(unique_properties.values())
 
         if unique_search_results:
-            cols = st.columns([3, 1])
-            with cols[0]:
-                st.success(f"Found {len(unique_search_results)} unique properties.")
-                for property in unique_search_results:
-                    st.markdown(f"### {property.get('address', 'No Address Provided')}")
+            st.success(f"Found {len(unique_search_results)} unique properties.")
+            for property in unique_search_results:
+                with st.expander(f"{property.get('address', 'No Address Provided')}"):
                     st.markdown(f"**Property ID:** `{property.get('custom_id')}`")
                     st.markdown(f"**City:** {property.get('city', 'N/A')}")
                     st.markdown(f"**State:** {property.get('state', 'N/A')}")
@@ -256,21 +254,18 @@ def search_property_ui():
                     st.markdown(f"**Type:** {property.get('type', 'N/A')}")
                     st.markdown(f"**Listed Date:** {property.get('date_listed', 'N/A')}")
                     st.markdown(f"**Description:** {property.get('description', 'N/A')}")
-            with cols[1]:
-                images = property.get('images', [])
-                if images:
-                    st.write("### Images")
-                    for img in images:
-                        display_image(img)
-                        
-            st.json(property)
+                    images = property.get('images', [])
+                    if images:
+                        st.write("### Images")
+                        for img in images:
+                            display_image(img)
 
-            # Prepare JSON and CSV download
+            # Global download buttons for all search results
             json_data = json.dumps(unique_search_results, indent=4, cls=JSONEncoder).encode('utf-8')
             df = pd.DataFrame(unique_search_results).drop(columns=['images'], errors='ignore')
             csv_data = df.to_csv(index=False).encode('utf-8')
 
-            st.download_button("Download JSON", json_data, "search_results.json", "application/json",key='download-json')
+            st.download_button("Download JSON", json_data, "search_results.json", "application/json", key='download-json')
             st.download_button("Download CSV", csv_data, "search_results.csv", "text/csv", key='download-csv')
         else:
             st.warning("No properties found matching the criteria.")
@@ -339,6 +334,16 @@ def delete_property_ui():
                 st.warning("Please confirm the deletion.")
 
 
+def logout_ui():
+    if st.sidebar.button('Logout'):
+        # Clear all items in the session state
+        keys = list(st.session_state.keys())
+        for key in keys:
+            del st.session_state[key]
+        st.sidebar.success("You have been logged out.")
+        st.experimental_rerun()  # Rerun the app to reflect logged out state
+
+
 def main():
     # Safely check if the user is authenticated, defaulting to False if the key doesn't exist
     is_authenticated = st.session_state.get("authenticated", False)
@@ -352,6 +357,9 @@ def main():
         operation = st.sidebar.selectbox("Choose Operation",
                                          ["Add Property", "Search Property", "Update Property", "Delete Property"])
 
+        # Save the current operation to session state
+        st.session_state['current_operation'] = operation
+
         if operation == "Add Property":
             add_property_ui()
         elif operation == "Search Property":
@@ -361,6 +369,8 @@ def main():
             update_property_ui()
         elif operation == "Delete Property":
             delete_property_ui()
+
+        logout_ui()  # Call the logout UI function
 
     else:
         # User is not authenticated, show login and optionally registration UI
