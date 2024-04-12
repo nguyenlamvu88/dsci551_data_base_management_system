@@ -76,5 +76,8 @@ Change to the directory where `frontend_v11.py` is saved and run the frontend ap
 - **`display_logo`**: Presents the system's logo and branding.
 - **`add_property_ui`**, **`search_property_ui`**, **`update_property_ui`**, **`delete_property_ui`**: Offer web-based forms and interfaces for managing property listings.
 
+#### Export to CSV or JSON
+- **`display_logo`**: Allows user to download search results in JSON or CSV format.
+
 #### Main Function
 - **`main`**: Coordinates the application's operation, facilitating navigation and feature access.
