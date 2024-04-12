@@ -1,10 +1,14 @@
 import streamlit as st
 import base64
+from bson import ObjectId
 from backend_v11 import insert_property, search_property, update_property, delete_property
 from PIL import Image
 import bcrypt
 from io import BytesIO
 from pymongo import MongoClient
+import pandas as pd
+import json
+import io
 
 
 # Constants for the states list and file types for images
@@ -104,7 +108,7 @@ def display_logo(url: str):
     st.markdown(f"""
         <div style="display: flex; align-items: center;">
             {logo_html}
-            <h1 style="margin: 0 0 0 50px;">Property Management System</h1>
+            <h1 style="margin: 0 0 0 50px;">Majestic Real Estate Management</h1>
         </div>
         <div class="space"></div>
         """, unsafe_allow_html=True)
@@ -198,60 +202,76 @@ def add_property_ui():
                 st.error(f"An error occurred: {e}")
 
 
+# Custom JSON Encoder to handle MongoDB ObjectId
+class JSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, ObjectId):
+            return str(o)  # Convert ObjectId to string
+        return json.JSONEncoder.default(self, o)
+
+
+def display_image(data):
+    """Display an image from a URL or base64 string."""
+    if isinstance(data, str):
+        if data.startswith('http'):  # URL
+            st.image(data, use_column_width=True)
+        elif data.startswith('data:image'):  # Base64
+            base64_str = data.split(',')[1]
+            image_data = base64.b64decode(base64_str)
+            image = Image.open(io.BytesIO(image_data))
+            st.image(image, use_column_width=True)
+
+
 def search_property_ui():
-    """
-    UI component for searching properties with optional sorting by price.
-    """
     st.subheader("🔍 Search for Properties")
-    # UI for search criteria
     with st.form("search_form"):
-        city = st.text_input("City")
-        st.caption("case-insensitive")  # Add a caption under the "City" input field
-
-        state = st.text_input("State")
-        st.caption("case-insensitive")  # Add a caption under the "State" input field
-
-        property_type = st.text_input("Type")
-        st.caption("sale or rent, case-insensitive")  # Add a caption under the "Type" input field
-
-        address = st.text_input("Address")
-        st.caption("partial match allowed, case-insensitive")  # Add a caption under the "Address" input field
-
+        city = st.text_input("City", help="case-insensitive")
+        state = st.text_input("State", help="case-insensitive")
+        property_type = st.text_input("Type", help="sale or rent, case-insensitive")
+        address = st.text_input("Address", help="partial match allowed, case-insensitive")
         custom_id = st.text_input("Custom ID")
         sort_by_price = st.selectbox("Sort by Price", ["None", "Ascending", "Descending"], index=0)
 
         submit = st.form_submit_button("Search")
 
     if submit:
-        # Translate UI option to sort parameter
-        sort_option = None
-        if sort_by_price == "Ascending":
-            sort_option = 'asc'
-        elif sort_by_price == "Descending":
-            sort_option = 'desc'
-
-        # Call the backend search function with sorting option
+        sort_option = 'asc' if sort_by_price == "Ascending" else 'desc' if sort_by_price == "Descending" else None
         search_results = search_property(city=city, state=state, property_type=property_type.lower(), address=address, custom_id=custom_id, sort_by_price=sort_option)
-
-        # Filter duplicates based on custom_id
-        unique_properties = {}
-        for property in search_results:
-            custom_id = property.get('custom_id')
-            if custom_id not in unique_properties:
-                unique_properties[custom_id] = property
-
-        # Use the values from unique_properties, which are now unique
+        unique_properties = {prop['custom_id']: prop for prop in search_results}
         unique_search_results = list(unique_properties.values())
 
         if unique_search_results:
-            st.success(f"Found {len(unique_search_results)} unique properties.")
-            for property in unique_search_results:
-                st.json(property)  # Display property details as JSON
+            cols = st.columns([3, 1])
+            with cols[0]:
+                st.success(f"Found {len(unique_search_results)} unique properties.")
+                for property in unique_search_results:
+                    st.markdown(f"### {property.get('address', 'No Address Provided')}")
+                    st.markdown(f"**Property ID:** `{property.get('custom_id')}`")
+                    st.markdown(f"**City:** {property.get('city', 'N/A')}")
+                    st.markdown(f"**State:** {property.get('state', 'N/A')}")
+                    st.markdown(f"**Price:** `${property.get('price', 'N/A')}`")
+                    st.markdown(f"**Bedrooms:** {property.get('bedrooms', 'N/A')}")
+                    st.markdown(f"**Bathrooms:** {property.get('bathrooms', 'N/A')}")
+                    st.markdown(f"**Square Footage:** {property.get('square_footage', 'N/A')}")
+                    st.markdown(f"**Type:** {property.get('type', 'N/A')}")
+                    st.markdown(f"**Listed Date:** {property.get('date_listed', 'N/A')}")
+                    st.markdown(f"**Description:** {property.get('description', 'N/A')}")
+            with cols[1]:
+                images = property.get('images', [])
+                if images:
+                    st.write("### Images")
+                    for img in images:
+                        display_image(img)
+                        
+            st.json(property)
 
-                # Display images if available, ensuring each image is unique
-                images = list(set(property.get('images', [])))
-                for img in images:
-                    display_image_in_base64(img)
+            # Prepare JSON and CSV download
+            json_data = json.dumps(unique_search_results, indent=4, cls=JSONEncoder).encode('utf-8')
+            df = pd.DataFrame(unique_search_results).drop(columns=['images'], errors='ignore')
+            csv_data = df.to_csv(index=False).encode('utf-8')
+
+            st.download_button("Download JSON", json_data, "search_results.json", "application/json",key='download-json')
+            st.download_button("Download CSV", csv_data, "search_results.csv", "text/csv", key='download-csv')
         else:
             st.warning("No properties found matching the criteria.")
 
