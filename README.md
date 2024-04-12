@@ -78,6 +78,3 @@ Change to the directory where `frontend_v11.py` is saved and run the frontend ap
 
 #### Export to CSV or JSON
 - Allows user to download search results in JSON or CSV format.
-
-#### Main Function
-- **`main`**: Coordinates the application's operation, facilitating navigation and feature access.
