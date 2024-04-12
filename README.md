@@ -77,4 +77,4 @@ Change to the directory where `frontend_v11.py` is saved and run the frontend ap
 - **`add_property_ui`**, **`search_property_ui`**, **`update_property_ui`**, **`delete_property_ui`**: Offer web-based forms and interfaces for managing property listings.
 
 #### Export to CSV or JSON
-- Allows user to download search results in JSON or CSV format.
+- **`Download CSV` & `Download JSON` buttons**: Allows user to download search results in JSON or CSV format.
