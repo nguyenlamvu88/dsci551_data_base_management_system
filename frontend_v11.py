@@ -261,7 +261,6 @@ def search_property_ui():
                     st.markdown(f"**Description:** {property.get('description', 'N/A')}")
                     images = property.get('images', [])
                     if images:
-                        st.write("### Images")
                         for img in images:
                             display_image(img)
 
