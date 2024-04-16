@@ -145,7 +145,7 @@ def check_connection():
 def register_user(username, password):
     user_collection = client['authentication']['login_info']
     if user_collection.find_one({"username": username}):
-        print("Username already exists.")
+        print(YELLOW + "\nUsername already exists." + RESET)
         return False
     try:
         # Generate password hash
@@ -154,7 +154,7 @@ def register_user(username, password):
         password_hash_str = password_hash.decode('utf-8')
         # Insert the user into the database
         user_collection.insert_one({'username': username, 'hashed_password': password_hash_str})
-        print("User registered successfully.")
+        print(BLUE + "\nUser registered successfully." + RESET)
         return True
     except Exception as e:
         print(f"Error during registration: {e}")
@@ -169,9 +169,9 @@ def authenticate_user(username, password):
         stored_hash = user['hashed_password']
         # No need to encode; stored_hash should already be bytes, decode when fetching
         if bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8')):
-            print("Login successful.")
+            print(BLUE + "\nLogin successful.\n" + RESET)
             return True
-    print("Login failed. Please check your username and password.")
+    print(RED + "\nLogin failed. Please check your username and password." + RESET)
     return False
 
 
@@ -693,7 +693,7 @@ def main():
         else:
             return
     elif not authenticate_user(args.username, args.password):
-        print("Login failed. Access denied.")
+        print(RED + "Login failed. Access denied.\n" + RESET)
         return
 
     # After successful login or registration, handle operations
