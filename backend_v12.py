@@ -1,3 +1,4 @@
+import bcrypt
 from pymongo import MongoClient, ASCENDING, DESCENDING
 import logging
 import hashlib
@@ -7,6 +8,7 @@ import json
 from bson import ObjectId
 import csv
 import datetime
+import os
 
 
 """
@@ -17,6 +19,7 @@ It supports a variety of operations such as inserting, searching, updating, and 
 
 Features include:
 - Database Initialization: Prepares the database by creating necessary indexes to optimize query performance.
+- User Authentication: Supports user registration and login to secure access to property management functionalities.
 - Property Insertion: Allows for the insertion of new property listings into the database, with input validation to ensure data integrity.
 - Property Searching: Supports searching for properties based on criteria such as city, state, type, and custom identifiers, with optional sorting by price.
 - Property Updating: Enables updating existing property listings by specifying the property's custom identifier and the fields to be updated.
@@ -25,59 +28,67 @@ Features include:
 - Interactive Mode: Offers an interactive mode for insert, search, update, and delete operations, guiding users through the process with prompts.
 
 Usage:
-The script is designed to be used from the command line, with specific flags and arguments to control its operations. 
-Examples include initializing the database, inserting a new property, searching for properties, updating a property's details, and deleting a property. 
+- The script is designed to be used from the command line, with specific flags and arguments to control its operations. Users must register and log in to access the property management functionalities securely. 
+- By setting username and password as environment variables (MYAPP_USERNAME and MYAPP_PASSWORD), users only need to log in once per session, simplifying subsequent command executions.
+- Additionally, the script supports interactive modes for inserting, searching, updating, and deleting properties, which provide a user-friendly interface for carrying out these operations.
 
-Additionally, the script supports interactive modes for inserting, searching, updating, and deleting properties, which provide a user-friendly interface for carrying out these operations.
-
-Security Note:
-The script includes a MongoDB URI with hardcoded credentials for demonstration purposes. In a production environment, it is crucial to manage sensitive information such as database URIs and credentials securely, using environment variables or configuration files.
 
 Dependencies:
 - pymongo: For MongoDB interactions.
 - logging: For logging information and errors.
 - hashlib: For generating hashes for custom IDs.
 - argparse: For parsing command-line arguments.
-- sys, json, csv, datetime: For various utility functions.
+- sys, json, csv, datetime, os: For various utility functions including environment variable management.
 
 
-Interactive Command-line Interface Instructions:
+Example of Registering and Logging In:
 
-Initializes database indexes:
-python backend_v12.py --init
-
-Inserting a Property: Follow the prompts for each property detail
-  python backend_v12.py --operation interactive_insert
-
-Searching for Properties: Follow the prompts for search criteria
-  python backend_v12.py --operation interactive_search
-
-Updating a Property: Follow the prompts to specify the property and updates
-  python backend_v12.py --operation interactive_update
-
-Deleting a Property: Follow the prompt to enter the Custom ID of the property to delete
-  python backend_v12.py --operation interactive_delete
+- Registering a new user: 
+  - python backend_v12.py --register --username "newuser" --password "userpassword"
+  
+- Logging in: 
+  - python backend_v12.py --username "user" --password "userpassword"
 
 
-Single Command-Line Interface Instructions:
+Examples of Interactive Modes:
 
-Initializes database indexes:
-python backend_v12.py --init
+- Initializes database indexes:
+  - python backend_v12.py --init
 
-Inserting a Property: provide details in accordance with the property schema
-python backend_v12.py --operation insert --address "456 University Dr" --city "Irvine" --state "California" --zip_code 92612 --price 1500000 --bedrooms 3 --bathrooms 2.5 --square_footage 2000 --type "sale" --date_listed "2024-02-15" --description "Spacious family home" --images "image1.jpg" "image2.jpg" "image3.jpg"
+- Inserting a Property: Follow the prompts for each property detail
+  - python backend_v12.py --operation interactive_insert
 
-Searching for Properties: use any combination of city, state, type, and address
-python backend_v12.py --operation search --city "Irvine" --type "sale"
-python backend_v12.py --operation search --custom_id "CAL-IRVI-456"
-python backend_v12.py --operation search --state "California" --city "San Francisco"
+- Searching for Properties: Follow the prompts for search criteria
+  - python backend_v12.py --operation interactive_search
 
-Updating a Property: need to provide its custom ID and the updates in a field=value format, separate by space
-python backend_v12.py --operation update --custom_id "CAL-IRVI-456" --updates "bedrooms=4" "bathrooms=2.5" "price=675000" 
+- Updating a Property: Follow the prompts to specify the property and updates
+  - python backend_v12.py --operation interactive_update
 
-Deleting a Property: provide its custom ID
-python backend_v12.py --operation delete --custom_id "CAL-IRVI-456"
+- Deleting a Property: Follow the prompt to enter the Custom ID of the property to delete
+  - python backend_v12.py --operation interactive_delete
 
+
+Examples of Command-Line Interface:
+
+- Initializes database indexes:
+  - python backend_v12.py --init
+
+- Inserting a Property: provide details in accordance with the property schema
+  - python backend_v12.py --operation insert --address "456 University Dr" --city "Irvine" --state "California" --zip_code 92612 --price 1500000 --bedrooms 3 --bathrooms 2.5 --square_footage 2000 --type "sale" --date_listed "2024-02-15" --description "Spacious family home" --images "image1.jpg" "image2.jpg" "image3.jpg"
+
+- Searching for Properties: use any combination of city, state, type, and address
+  - python backend_v12.py --operation search --city "Irvine" --type "sale"
+  - python backend_v12.py --operation search --custom_id "CAL-IRVI-456"
+  - python backend_v12.py --operation search --state "California" --city "San Francisco"
+
+- Updating a Property: need to provide its custom ID and the updates in a field=value format, separate by space
+  - python backend_v12.py --operation update --custom_id "CAL-IRVI-456" --updates "bedrooms=4" "bathrooms=2.5" "price=675000" 
+
+- Deleting a Property: provide its custom ID
+  - python backend_v12.py --operation delete --custom_id "CAL-IRVI-456"
+
+Security Note:
+- The script includes a MongoDB URI with hardcoded credentials for demonstration purposes. In a production environment, it is crucial to manage sensitive information such as database URIs and credentials securely, using environment variables or configuration files.
 """
 
 
@@ -129,6 +140,39 @@ def check_connection():
     except Exception as e:
         logging.error(f"Failed to connect to MongoDB: {e}")
         sys.exit("Exiting due to unsuccessful MongoDB connection.")
+
+
+def register_user(username, password):
+    user_collection = client['authentication']['login_info']
+    if user_collection.find_one({"username": username}):
+        print("Username already exists.")
+        return False
+    try:
+        # Generate password hash
+        password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        # Convert byte string to string before storing
+        password_hash_str = password_hash.decode('utf-8')
+        # Insert the user into the database
+        user_collection.insert_one({'username': username, 'hashed_password': password_hash_str})
+        print("User registered successfully.")
+        return True
+    except Exception as e:
+        print(f"Error during registration: {e}")
+        return False
+
+
+def authenticate_user(username, password):
+    user_collection = client['authentication']['login_info']
+    user = user_collection.find_one({'username': username})
+    if user:
+        # Retrieve the stored hash
+        stored_hash = user['hashed_password']
+        # No need to encode; stored_hash should already be bytes, decode when fetching
+        if bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8')):
+            print("Login successful.")
+            return True
+    print("Login failed. Please check your username and password.")
+    return False
 
 
 def initialize_indexes():
@@ -618,97 +662,109 @@ def delete_property_interactive():
 
 def main():
     parser = argparse.ArgumentParser(description="Property Management System")
-    parser.add_argument('--operation', choices=['insert', 'search', 'update', 'delete', 'interactive_insert', 'interactive_search', 'interactive_delete', 'interactive_update'], required=True,
-                        help="Operation to perform: insert, search, update, delete, interactive_insert, interactive_search, interactive_delete, or interactive_update")
-
-    parser.add_argument('--city', help="City where the property is located")
-    parser.add_argument('--state', help="State where the property is located")
-    parser.add_argument('--type', help="Type of the property (e.g., 'sale', 'rent')")
-    parser.add_argument('--address', help="Address of the property")
-    parser.add_argument('--custom_id', help="Custom ID of the property")
-    parser.add_argument('--updates', nargs='*', help="Updates to apply in the format: field1=value1 field2=value2")
-    parser.add_argument('--zip_code', type=int, help="Zip code of the property")
-    parser.add_argument('--price', type=float, help="Price of the property")
-    parser.add_argument('--bedrooms', type=int, help="Number of bedrooms")
-    parser.add_argument('--bathrooms', type=float, help="Number of bathrooms")
-    parser.add_argument('--square_footage', type=int, help="Square footage of the property")
-    parser.add_argument('--date_listed', help="Date when the property was listed")
-    parser.add_argument('--description', help="Description of the property")
-    parser.add_argument('--images', nargs='*', help="List of property images")
-    parser.add_argument('--init', action='store_true', help="Initialize database indexes")
+    # Define username and password arguments with environment variables as default
+    parser.add_argument('--username', help="Username for login or registration", default=os.getenv('MYAPP_USERNAME'))
+    parser.add_argument('--password', help="Password for login or registration", default=os.getenv('MYAPP_PASSWORD'))
+    parser.add_argument('--register', action='store_true', help="Register a new user")
+    parser.add_argument('--operation', choices=['insert', 'search', 'update', 'delete', 'interactive_insert', 'interactive_search', 'interactive_update', 'interactive_delete'], help="Operation to perform")
+    parser.add_argument('--city', help="City where the property is located", required=False)
+    parser.add_argument('--state', help="State where the property is located", required=False)
+    parser.add_argument('--type', help="Type of the property (e.g., 'sale', 'rent')", required=False)
+    parser.add_argument('--address', help="Address of the property", required=False)
+    parser.add_argument('--custom_id', help="Custom ID of the property", required=False)
+    parser.add_argument('--updates', nargs='*', help="Updates to apply in the format: field1=value1 field2=value2", required=False)
+    parser.add_argument('--zip_code', type=int, help="Zip code of the property", required=False)
+    parser.add_argument('--price', type=float, help="Price of the property", required=False)
+    parser.add_argument('--bedrooms', type=int, help="Number of bedrooms", required=False)
+    parser.add_argument('--bathrooms', type=float, help="Number of bathrooms", required=False)
+    parser.add_argument('--square_footage', type=int, help="Square footage of the property", required=False)
+    parser.add_argument('--date_listed', help="Date when the property was listed", required=False)
+    parser.add_argument('--description', help="Description of the property", required=False)
+    parser.add_argument('--images', nargs='*', help="List of property images", required=False)
+    parser.add_argument('--init', action='store_true', help="Initialize database indexes", required=False)
+    parser.add_argument('--sort_by_price', choices=['asc', 'desc'], help="Sort search results by price in ascending or descending order", required=False)
 
     args = parser.parse_args()
 
+    # Authenticate or register user
+    if args.register:
+        if register_user(args.username, args.password):
+            print("Registration successful. Please log in.")
+        else:
+            return
+    elif not authenticate_user(args.username, args.password):
+        print("Login failed. Access denied.")
+        return
+
+    # After successful login or registration, handle operations
     if args.init:
         initialize_indexes()
-        print(GREEN + "\n\nDatabase indexes initialized successfully.\n" + RESET)
+        print("Database indexes initialized successfully.")
 
+    # Handle different operations based on command line arguments
+    if args.operation:
+        if 'interactive' in args.operation:
+            handle_interactive(args)
+        else:
+            handle_non_interactive(args)
+
+
+def handle_interactive(args):
     if args.operation == 'interactive_insert':
         insert_property_interactive()
-
     elif args.operation == 'interactive_search':
         search_property_interactive()
-
+    elif args.operation == 'interactive_update':
+        update_property_interactive()
     elif args.operation == 'interactive_delete':
         delete_property_interactive()
 
-    elif args.operation == 'interactive_update':
-        update_property_interactive()
 
-    elif args.operation == 'insert':
-        property_data = {
-            "address": args.address,
-            "city": args.city,
-            "state": args.state,
-            "zip_code": args.zip_code,
-            "price": args.price,
-            "bedrooms": args.bedrooms,
-            "bathrooms": args.bathrooms,
-            "square_footage": args.square_footage,
-            "type": args.type,
-            "date_listed": args.date_listed,
-            "description": args.description,
-            "images": args.images
-        }
-        success = insert_property(property_data)
-        if success:
-            print(GREEN + "\nProperty inserted successfully.\n" + RESET)
-        else:
-            print(RED + "\nFailed to insert property.\n" + RESET)
-
+def handle_non_interactive(args):
+    if args.operation == 'insert':
+        property_data = collect_property_data(args)
+        insert_property(property_data)
     elif args.operation == 'search':
         search_results = search_property(city=args.city, state=args.state, property_type=args.type,
                                          address=args.address, custom_id=args.custom_id)
-
-        if search_results:
-            print(GREEN + f"\nFound {len(search_results)} properties:\n" + RESET)
-            for property in search_results:
-                print(property, '\n')
-            export_to_csv(search_results)
-            export_to_json(search_results)
-        else:
-            print(YELLOW + "No properties found matching the criteria.\n" + RESET)
-
+        print_search_results(search_results)
     elif args.operation == 'update':
         if args.custom_id and args.updates:
-            updates = {u.split('=')[0]: u.split('=')[1] for u in args.updates}
-            success = update_property(args.custom_id, updates)
-            if success:
-                print(GREEN + "\nProperty updated successfully.\n" + RESET)
-            else:
-                print(RED + "\nFailed to update property.\n" + RESET)
-        else:
-            print(YELLOW + "\nCustom ID and updates are required for update operation.\n" + RESET)
-
+            updates = parse_updates(args.updates)
+            update_property(args.custom_id, updates)
     elif args.operation == 'delete':
         if args.custom_id:
-            success = delete_property(args.custom_id)
-            if success:
-                print(GREEN + "\nProperty deleted successfully.\n" + RESET)
-            else:
-                print(RED + "Failed to delete property.\n" + RESET)
-        else:
-            print(YELLOW + "\nCustom ID is required for delete operation.\n" + RESET)
+            delete_property(args.custom_id)
+
+
+def collect_property_data(args):
+    return {
+        "address": args.address,
+        "city": args.city,
+        "state": args.state,
+        "zip_code": args.zip_code,
+        "price": args.price,
+        "bedrooms": args.bedrooms,
+        "bathrooms": args.bathrooms,
+        "square_footage": args.square_footage,
+        "type": args.type,
+        "date_listed": args.date_listed,
+        "description": args.description,
+        "images": args.images
+    }
+
+
+def print_search_results(search_results):
+    if search_results:
+        print(f"Found {len(search_results)} properties:")
+        for property in search_results:
+            print_property(property)
+    else:
+        print("No properties found.")
+
+
+def parse_updates(updates):
+    return {u.split('=')[0]: u.split('=')[1] for u in updates}
 
 
 if __name__ == "__main__":
