@@ -45,6 +45,10 @@ The username and password are set as environment variables (MYAPP_USERNAME and M
 
 ### Function Descriptions
 
+#### Authentication Functions
+- **`register_user`**: Registers a new user by securely hashing their password and storing it in MongoDB.
+- **`authenticate_user`**: Validates user login attempts against stored hashed passwords to ensure secure access.
+
 #### Database and Initialization Functions
 - **`check_connection`**: Ensures MongoDB connectivity.
 - **`initialize_indexes`**: Sets up indexes for improved query performance.
