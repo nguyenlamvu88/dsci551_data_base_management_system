@@ -245,7 +245,7 @@ def search_property_ui():
             for property in unique_search_results:
                 with st.expander(f"{property.get('address', 'No Address Provided')}"):
                     st.markdown(
-                        f"<span style='font-weight:bold; color:orange;'>{property.get('address', 'No Address Provided')}</span>",
+                        f"<span style='font-weight:bold; color:dark blue;'>{property.get('address', 'No Address Provided')}</span>",
                         unsafe_allow_html=True)
                     col1, col2, col3 = st.columns(3)
                     with col1:
