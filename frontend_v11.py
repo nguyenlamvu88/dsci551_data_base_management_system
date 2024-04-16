@@ -244,19 +244,24 @@ def search_property_ui():
             st.success(f"Found {len(unique_search_results)} unique properties.")
             for property in unique_search_results:
                 with st.expander(f"{property.get('address', 'No Address Provided')}"):
+                    st.markdown(
+                        f"<span style='font-weight:bold; color:orange;'>{property.get('address', 'No Address Provided')}</span>",
+                        unsafe_allow_html=True)
                     col1, col2, col3 = st.columns(3)
                     with col1:
                         st.markdown(f"**Property ID:** `{property.get('custom_id')}`")
-                        st.markdown(f"**City:** {property.get('city', 'N/A')}")
-                        st.markdown(f"**State:** {property.get('state', 'N/A')}")
+                        st.markdown(f"**City:** `{property.get('city', 'N/A')}`")
+                        st.markdown(f"**State:** `{property.get('state', 'N/A')}`")
                     with col2:
-                        st.markdown(f"**Price:** `${property.get('price', 'N/A')}`", unsafe_allow_html=True)
-                        st.markdown(f"**Bedrooms:** {property.get('bedrooms', 'N/A')}")
-                        st.markdown(f"**Bathrooms:** {property.get('bathrooms', 'N/A')}")
+                        price = property.get('price', 'N/A')
+                        formatted_price = f"${price:,.0f}" if isinstance(price, int) else "N/A"
+                        st.markdown(f"**Price:** `{formatted_price}`", unsafe_allow_html=True)
+                        st.markdown(f"**Bedrooms:** `{property.get('bedrooms', 'N/A')}`")
+                        st.markdown(f"**Bathrooms:** `{property.get('bathrooms', 'N/A')}`")
                     with col3:
-                        st.markdown(f"**Square Footage:** {property.get('square_footage', 'N/A')}")
-                        st.markdown(f"**Type:** {property.get('type', 'N/A')}")
-                        st.markdown(f"**Listed Date:** {property.get('date_listed', 'N/A')}")
+                        st.markdown(f"**Square Footage:** `{property.get('square_footage', 'N/A')}`")
+                        st.markdown(f"**Type:** `{property.get('type', 'N/A')}`")
+                        st.markdown(f"**Listed Date:** `{property.get('date_listed', 'N/A')}`")
 
                     st.markdown(f"**Description:** {property.get('description', 'N/A')}")
                     images = property.get('images', [])
