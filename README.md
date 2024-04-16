@@ -24,19 +24,19 @@ The Property Management System web application can be accessed through the link:
 ### Usage Instructions
 #### Change to the directory where `backend_v12.py` is saved and run the following commands:
 
-#### Authenticaion Example:
-- **The username and password are set as environment variables (MYAPP_USERNAME and MYAPP_PASSWORD), users only need to log in once per session, simplifying subsequent command executions.
+##### Authenticaion Example:
+The username and password are set as environment variables (MYAPP_USERNAME and MYAPP_PASSWORD), users only need to log in once per session, simplifying subsequent command executions.
 - **Registering a new user**: `python backend_v12.py --register --username "newuser" --password "userpassword"`
 - **Logging in**: `python backend_v12.py --username "user" --password "userpassword"`
 
-#### Command-Line Interface Example
+##### Command-Line Interface Example
 - **Initialize Database**: `python backend_v12.py --init`
 - **Insert a Property**: `python backend_v12.py --operation insert --address "456 University Dr" --city "Irvine" --state "California" --zip_code 92612 --price 1500000 --bedrooms 3 --bathrooms 2.5 --square_footage 2000 --type "sale" --date_listed "2024-02-15" --description "Spacious family home" --images "image1.jpg" "image2.jpg" "image3.jpg"`
 - **Search for Properties**: `python backend_v12.py --operation search --city "Irvine" --type "sale"`
 - **Update a Property**: `python backend_v12.py --operation update --custom_id "CAL-IRVI-456" --updates "bedrooms=4" "bathrooms=2.5" "price=675000"`
 - **Delete a Property**: `python backend_v12.py --operation delete --custom_id "CAL-IRVI-456"`
 
-#### Interactive Interface Example
+##### Interactive Interface Example
 
 - **Interactive Insert**: `python backend_v12.py --operation interactive_insert`
 - **Interactive Search**: `python backend_v12.py --operation interactive_search`
