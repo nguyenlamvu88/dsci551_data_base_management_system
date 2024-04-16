@@ -44,48 +44,48 @@ Dependencies:
 Example of Registering and Logging In:
 
 - Registering a new user: 
-  - python backend_v12.py --register --username "newuser" --password "userpassword"
+  - python backend_v11.py --register --username "newuser" --password "userpassword"
   
 - Logging in: 
-  - python backend_v12.py --username "user" --password "userpassword"
+  - python backend_v11.py --username "user" --password "userpassword"
 
 
 Examples of Interactive Modes:
 
 - Initializes database indexes:
-  - python backend_v12.py --init
+  - python backend_v11.py --init
 
 - Inserting a Property: Follow the prompts for each property detail
-  - python backend_v12.py --operation interactive_insert
+  - python backend_v11.py --operation interactive_insert
 
 - Searching for Properties: Follow the prompts for search criteria
-  - python backend_v12.py --operation interactive_search
+  - python backend_v11.py --operation interactive_search
 
 - Updating a Property: Follow the prompts to specify the property and updates
-  - python backend_v12.py --operation interactive_update
+  - python backend_v11.py --operation interactive_update
 
 - Deleting a Property: Follow the prompt to enter the Custom ID of the property to delete
-  - python backend_v12.py --operation interactive_delete
+  - python backend_v11.py --operation interactive_delete
 
 
 Examples of Command-Line Interface:
 
 - Initializes database indexes:
-  - python backend_v12.py --init
+  - python backend_v11.py --init
 
 - Inserting a Property: provide details in accordance with the property schema
-  - python backend_v12.py --operation insert --address "456 University Dr" --city "Irvine" --state "California" --zip_code 92612 --price 1500000 --bedrooms 3 --bathrooms 2.5 --square_footage 2000 --type "sale" --date_listed "2024-02-15" --description "Spacious family home" --images "image1.jpg" "image2.jpg" "image3.jpg"
+  - python backend_v11.py --operation insert --address "456 University Dr" --city "Irvine" --state "California" --zip_code 92612 --price 1500000 --bedrooms 3 --bathrooms 2.5 --square_footage 2000 --type "sale" --date_listed "2024-02-15" --description "Spacious family home" --images "image1.jpg" "image2.jpg" "image3.jpg"
 
 - Searching for Properties: use any combination of city, state, type, and address
-  - python backend_v12.py --operation search --city "Irvine" --type "sale"
-  - python backend_v12.py --operation search --custom_id "CAL-IRVI-456"
-  - python backend_v12.py --operation search --state "California" --city "San Francisco"
+  - python backend_v11.py --operation search --city "Irvine" --type "sale"
+  - python backend_v11.py --operation search --custom_id "CAL-IRVI-456"
+  - python backend_v11.py --operation search --state "California" --city "San Francisco"
 
 - Updating a Property: need to provide its custom ID and the updates in a field=value format, separate by space
-  - python backend_v12.py --operation update --custom_id "CAL-IRVI-456" --updates "bedrooms=4" "bathrooms=2.5" "price=675000" 
+  - python backend_v11.py --operation update --custom_id "CAL-IRVI-456" --updates "bedrooms=4" "bathrooms=2.5" "price=675000" 
 
 - Deleting a Property: provide its custom ID
-  - python backend_v12.py --operation delete --custom_id "CAL-IRVI-456"
+  - python backend_v11.py --operation delete --custom_id "CAL-IRVI-456"
 
 Security Note:
 - The script includes a MongoDB URI with hardcoded credentials for demonstration purposes. In a production environment, it is crucial to manage sensitive information such as database URIs and credentials securely, using environment variables or configuration files.
