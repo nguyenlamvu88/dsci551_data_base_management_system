@@ -1,14 +1,13 @@
 import streamlit as st
 import base64
 from bson import ObjectId
-from backend_v11 import insert_property, search_property, update_property, delete_property
+from backend_v12 import insert_property, search_property, update_property, delete_property
 from PIL import Image
 import bcrypt
 from io import BytesIO
 from pymongo import MongoClient
 import pandas as pd
 import json
-import io
 
 
 # Constants for the states list and file types for images
@@ -34,6 +33,7 @@ users_collection = db['login_info']
 
 
 def hash_password(password):
+    """Hash a password before storing it."""
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
 
@@ -44,7 +44,11 @@ def insert_new_user(username, hashed_password):
             st.error("Username already exists. Please choose a different username.")
             return False
 
-        result = users_collection.insert_one({"username": username, "hashed_password": hashed_password})
+        # Ensure the password hash is decoded to a string before storage if not already handled
+        result = users_collection.insert_one({
+            "username": username,
+            "hashed_password": hashed_password.decode('utf-8')  # decode bytes to string
+        })
         if result.inserted_id:
             return True
         else:
@@ -60,9 +64,13 @@ def login_ui():
     username = st.sidebar.text_input("Username", key="login_username")
     password = st.sidebar.text_input("Password", type="password", key="login_password")
     if st.sidebar.button("Login"):
+        # Here you would have your logic to authenticate the user.
+        # This is typically a function that returns True if the login is successful.
         user_info = users_collection.find_one({"username": username})
-        if user_info and bcrypt.checkpw(password.encode('utf-8'), user_info['hashed_password']):
-            st.session_state["authenticated"] = True
+        if user_info and bcrypt.checkpw(password.encode('utf-8'), user_info['hashed_password'].encode('utf-8')):
+            # If the user is successfully authenticated, you set the session state.
+            st.session_state['authenticated'] = True
+            st.session_state['username'] = username  # This line sets the username in the session state
             st.sidebar.success("You are logged in.")
             st.experimental_rerun()
         else:
@@ -70,12 +78,12 @@ def login_ui():
 
 
 def registration_ui():
+    """Create a registration interface for new users."""
     st.sidebar.subheader("Register New Account")
     with st.sidebar.form("registration_form"):
         new_username = st.text_input("New Username", key="new_username_reg")
         new_password = st.text_input("New Password", type="password", key="new_password_reg")
         submit_button = st.form_submit_button("Register")
-
         if submit_button:
             if new_username and new_password:
                 hashed_password = hash_password(new_password)
@@ -192,14 +200,19 @@ def add_property_ui():
                 "description": description,
                 "images": image_strings
             }
-            try:
-                success = insert_property(property_data)
-                if success:
-                    st.success("Property added successfully!")
-                else:
-                    st.error("Failed to add property. Please check the input data.")
-            except Exception as e:
-                st.error(f"An error occurred: {e}")
+            # Retrieve the username from session state
+            username = st.session_state.get('username', None)
+            if username:
+                try:
+                    success = insert_property(property_data, username)
+                    if success:
+                        st.success("Property added successfully!")
+                    else:
+                        st.error("Failed to add property. Please check the input data.")
+                except Exception as e:
+                    st.error(f"An error occurred: {e}")
+            else:
+                st.error("User not logged in. Please log in to add properties.")
 
 
 # Custom JSON Encoder to handle MongoDB ObjectId
@@ -210,16 +223,15 @@ class JSONEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, o)
 
 
-def display_image(data):
-    """Display an image from a URL or base64 string."""
-    if isinstance(data, str):
-        if data.startswith('http'):  # URL
-            st.image(data, use_column_width=True)
-        elif data.startswith('data:image'):  # Base64
-            base64_str = data.split(',')[1]
-            image_data = base64.b64decode(base64_str)
-            image = Image.open(io.BytesIO(image_data))
-            st.image(image, use_column_width=True)
+def display_image(base64_string):
+    if isinstance(base64_string, str):
+        # Check if the string is a URL or base64
+        if base64_string.startswith('http') or base64_string.startswith('data:image'):
+            st.image(base64_string, use_column_width=True)
+        else:
+            st.error('Invalid image URL or base64 string')
+    else:
+        st.error('Invalid image data')
 
 
 def search_property_ui():
@@ -243,9 +255,9 @@ def search_property_ui():
         if unique_search_results:
             st.success(f"Found {len(unique_search_results)} unique properties.")
             for property in unique_search_results:
-                with st.expander(f"{property.get('address', 'No Address Provided')}"):
+                with st.expander(f"{property.get('address', 'No Address Provided')}, {property.get('city', 'Unknown City')}, {property.get('state', 'Unknown State')} {property.get('zip_code', 'Unknown ZIP')}"):
                     st.markdown(
-                        f"<span style='font-weight:bold; color:dark blue;'>{property.get('address', 'No Address Provided')}</span>",
+                        f"<span style='font-weight:bold; color: dark blue;'>{property.get('address', 'No Address Provided')}</span>",
                         unsafe_allow_html=True)
                     col1, col2, col3 = st.columns(3)
                     with col1:
@@ -280,77 +292,124 @@ def search_property_ui():
             st.warning("No properties found matching the criteria.")
 
 
+def insert_new_property(property_data, username):
+    """
+    Insert a new property into the database, including the username of the creator.
+    """
+    # Add the 'created_by' field to property_data
+    property_data['created_by'] = username
+    # Call your existing backend function to insert the property
+    return insert_property(property_data)
+
+
 def update_property_ui():
-    """
-    UI for updating property details with all input fields displayed.
-    """
     st.subheader("✏️ Update Property Details")
+    custom_id = st.text_input("Enter the Custom ID of the property to update")
 
-    with st.form(key='update_property_form'):
-        custom_id = st.text_input("Property Custom ID")
+    fetch_button = st.button("Fetch Property Details")
+    if fetch_button and custom_id:
+        property_info = search_property(custom_id=custom_id)
+        if property_info:
+            property_data = property_info[0]  # Assuming the first match is what we want
+            owner_username = property_data.get('created_by')
 
-        # Display input fields for all updateable properties
-        price = st.number_input("New Price ($)", format="%d", step=25000, key="price")  # Step enforces integer increments
-        bedrooms = st.number_input("New Bedrooms", format="%d", step=1, key="bedrooms")  # Step enforces integer increments
-        bathrooms = st.number_input("New Bathrooms", format="%f", step=0.5, key="bathrooms")  # Bathrooms can often be a float
-        square_footage = st.number_input("New Square Footage", format="%d", step=100, key="square_footage")  # Step enforces integer increments
-        listed_date = st.date_input("New Listed Date", key="listed_date")
-        prop_type = st.selectbox("New Type", ["Sale", "Rent"], key="type")
-        description = st.text_input("New Description", key="description")
-
-        submit_update = st.form_submit_button(label='Update Property')
-
-        if submit_update:
-            # Collect updates into a dictionary, ignoring empty fields
-            update_data = {}
-            if price > 0: update_data['price'] = price
-            if bedrooms > 0: update_data['bedrooms'] = bedrooms
-            if bathrooms > 0: update_data['bathrooms'] = bathrooms
-            if square_footage > 0: update_data['square_footage'] = square_footage
-            if listed_date: update_data['listed_date'] = listed_date.strftime("%Y-%m-%d")
-            if prop_type: update_data['type'] = prop_type.lower()
-            if description: update_data['description'] = description
-
-            # Ensure there's at least one field to update
-            if update_data:
-                success = update_property(custom_id, update_data)
-                if success:
-                    st.success("Property updated successfully!")
-                else:
-                    st.error("Failed to update property. Please check the input data and Custom ID.")
+            # Check if the logged-in user is the owner of the property
+            if st.session_state.get('username') == owner_username:
+                st.session_state['property_data'] = property_data
+                st.success("Property details fetched. You can now update the property.")
             else:
-                st.error("No updates specified. Please fill in at least one field to update.")
+                st.error("You are not authorized to update this property.")
+        else:
+            st.error("Property not found. Please check the Custom ID.")
+
+    if 'property_data' in st.session_state:
+        property_data = st.session_state['property_data']
+        with st.form("update_form"):
+            new_price = st.number_input(
+                "Price ($)", value=float(property_data.get('price', 0)),
+                min_value=0.0, step=50000.0, format="%.2f"
+            )
+            new_bedrooms = st.number_input("Bedrooms", value=property_data.get('bedrooms', 0), min_value=0)
+            new_bathrooms = st.number_input("Bathrooms", value=property_data.get('bathrooms', 0.0), min_value=0.0, step=0.5)
+            new_square_footage = st.number_input("Square Footage", value=property_data.get('square_footage', 0), min_value=0, step=100)
+            new_type = st.selectbox("Type", ["Sale", "Rent"], index=0 if property_data.get('type', 'sale') == 'sale' else 1)
+            new_listed_date = st.date_input("Listed Date", value=pd.to_datetime(property_data.get('date_listed')))
+            new_description = st.text_area("Description", value=property_data.get('description', ''))
+            submit_update = st.form_submit_button("Update Property")
+
+            if submit_update:
+                updates = {
+                    "price": new_price,
+                    "bedrooms": new_bedrooms,
+                    "bathrooms": new_bathrooms,
+                    "square_footage": new_square_footage,
+                    "type": new_type.lower(),
+                    "listed_date": new_listed_date.strftime("%Y-%m-%d"),
+                    "description": new_description
+                }
+                username = st.session_state.get('username')
+                if username:
+                    result = update_property(custom_id, updates, username=username)
+                    if result:
+                        st.success("Property updated successfully!")
+                        del st.session_state['property_data']  # Clear the stored data
+                    else:
+                        st.error("Failed to update property. Please check the input data and try again.")
+                else:
+                    st.error("You must be logged in to update a property.")
 
 
 def delete_property_ui():
-    """
-    UI for deleting a property.
-    """
     st.subheader("🗑️ Delete a Property")
-    with st.form(key='delete_property_form'):
-        custom_id = st.text_input("Property Custom ID to Delete")
-        submit_delete = st.form_submit_button(label='Delete Property')
+    custom_id = st.text_input("Enter the Custom ID of the property to delete", key='delete_property_custom_id')
 
-        if submit_delete:
-            confirm_delete = st.checkbox("I confirm that I want to delete this property", value=False)
-            if confirm_delete:
-                success = delete_property(custom_id)
-                if success:
-                    st.success("Property deleted successfully!")
-                else:
-                    st.error("Failed to delete property. Please check the Custom ID.")
+    if custom_id:
+        fetch_button = st.button("Fetch Property Details")
+        if fetch_button:
+            property_info = search_property(custom_id=custom_id)
+            if property_info:
+                property_data = property_info[0]
+                st.session_state['property_data_to_delete'] = property_data
+                st.success("Property details fetched. Confirm deletion below.")
             else:
-                st.warning("Please confirm the deletion.")
+                st.error("Property not found. Please check the Custom ID.")
+                if 'property_data_to_delete' in st.session_state:
+                    del st.session_state['property_data_to_delete']
+
+        if 'property_data_to_delete' in st.session_state:
+            property_data = st.session_state['property_data_to_delete']
+            st.write(f"Property Address: {property_data.get('address')}")
+            st.write(f"Property ID: {property_data.get('custom_id')}")
+            st.write(f"Listed by: {property_data.get('created_by')}")
+
+            if st.session_state.get('username') == property_data.get('created_by'):
+                confirm_delete = st.checkbox("Confirm you want to delete this property", value=False, key='confirm_delete')
+                delete_button = st.button("Delete Property")
+                if delete_button and confirm_delete:
+                    username = st.session_state.get('username')
+                    result = delete_property(custom_id, username)  # Pass the username as an argument
+                    if result:
+                        st.success("Property deleted successfully!")
+                        st.session_state['reset_delete_property_custom_id'] = True  # Set the flag to reset on next run
+                        # Do not clear 'delete_property_custom_id' here directly
+                    else:
+                        st.error("Failed to delete property. Please check the Custom ID.")
+            else:
+                st.error("You do not have permission to delete this property.")
+    else:
+        if st.button("Fetch Property Details"):
+            st.warning("Please enter a Custom ID.")
 
 
 def logout_ui():
     if st.sidebar.button('Logout'):
-        # Clear all items in the session state
-        keys = list(st.session_state.keys())
-        for key in keys:
-            del st.session_state[key]
+        # Clear authentication-related session state
+        if 'authenticated' in st.session_state:
+            del st.session_state['authenticated']
+        if 'username' in st.session_state:
+            del st.session_state['username']
         st.sidebar.success("You have been logged out.")
-        st.experimental_rerun()  # Rerun the app to reflect logged out state
+        st.experimental_rerun()
 
 
 def main():
@@ -372,7 +431,7 @@ def main():
         if operation == "Add Property":
             add_property_ui()
         elif operation == "Search Property":
-            search_results = search_property_ui()  # Modify this function to return search results
+            search_results = search_property_ui()
             st.session_state['search_results'] = search_results  # Store search results in session state
         elif operation == "Update Property":
             update_property_ui()
@@ -383,8 +442,9 @@ def main():
 
     else:
         # User is not authenticated, show login and optionally registration UI
+        if 'logout' in st.session_state:
+            del st.session_state['username']  # Ensure user details are cleared on logout
         login_ui()
-
         registration_ui()
 
 
