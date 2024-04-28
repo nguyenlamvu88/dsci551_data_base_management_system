@@ -31,10 +31,10 @@ The username and password are set as environment variables (MYAPP_USERNAME and M
 
 ##### Command-Line Interface Example
 - **Initialize Database**: `python backend_v12.py --init`
-- **Insert a Property**: `python backend_v12.py --operation insert --address "456 University Dr" --city "Irvine" --state "California" --zip_code 92612 --price 1500000 --bedrooms 3 --bathrooms 2.5 --square_footage 2000 --type "sale" --date_listed "2024-02-15" --description "Spacious family home" --images "image1.jpg" "image2.jpg" "image3.jpg"`
+- **Insert a Property**: `python backend_v12.py --username "user" --password "password" --operation insert --address "14631 Deer Park St" --city "Irvine" --state "California" --zip_code 92604 --price 1688888 --bedrooms 4 --bathrooms 3 --square_footage 2089 --type "sale" --date_listed "2024-04-01" --description "Charming downtown home" --images "img1.jpg,img2.jpg"`
 - **Search for Properties**: `python backend_v12.py --operation search --city "Irvine" --type "sale"`
-- **Update a Property**: `python backend_v12.py --operation update --custom_id "CAL-IRVI-456" --updates "bedrooms=4" "bathrooms=2.5" "price=675000"`
-- **Delete a Property**: `python backend_v12.py --operation delete --custom_id "CAL-IRVI-456"`
+- **Update a Property**: `python backend_v12.py --username "user" --password "password" --operation update --custom_id "CAL-IRVI-14631DeerParkSt" --updates "bedrooms=4" "bathrooms=2.5" "price=675000"`
+- **Delete a Property**: `python backend_v12.py --username "user" --password "password" --operation delete --custom_id "CAL-IRVI-14631DeerParkSt"`
 
 ##### Interactive Interface Example
 
