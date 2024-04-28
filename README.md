@@ -38,10 +38,10 @@ The username and password are set as environment variables (MYAPP_USERNAME and M
 
 ##### Interactive Interface Example
 
-- **Interactive Insert**: `python backend_v12.py --operation interactive_insert`
-- **Interactive Search**: `python backend_v12.py --operation interactive_search`
-- **Interactive Update**: `python backend_v12.py --operation interactive_update`
-- **Interactive Delete**: `python backend_v12.py --operation interactive_delete`
+- **Interactive Insert**: `python backend_v12.py --username "user" --password "password" --operation interactive_insert`
+- **Interactive Search**: `python backend_v12.py --username "user" --password "password" --operation interactive_search`
+- **Interactive Update**: `python backend_v12.py --username "user" --password "password" --operation interactive_update`
+- **Interactive Delete**: `python backend_v12.py --username "user" --password "password" --operation interactive_delete`
 
 ### Function Descriptions
 
