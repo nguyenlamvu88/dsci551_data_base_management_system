@@ -26,8 +26,8 @@ The Property Management System web application can be accessed through the link:
 
 ##### Authenticaion Example:
 The username and password are set as environment variables (MYAPP_USERNAME and MYAPP_PASSWORD), users only need to log in once per session, simplifying subsequent command executions.
-- **Registering a new user**: `python backend_v12.py --register --username "newuser" --password "userpassword"`
-- **Logging in**: `python backend_v12.py --username "user" --password "userpassword"`
+- **Registering a new user**: `python backend_v12.py --register --username "user" --password "password"`
+- **Logging in**: `python backend_v12.py --username "user" --password "password"`
 
 ##### Command-Line Interface Example
 - **Initialize Database**: `python backend_v12.py --init`
