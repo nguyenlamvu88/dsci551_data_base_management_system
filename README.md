@@ -13,11 +13,11 @@ The Property Management System web application can be accessed through the link:
 ### Features Include:
 
 - **Database Initialization**: Sets up necessary indexes to optimize query performance.
-- **User Authentication**: Supports secure user registration and login.
-- **Property Insertion**: Facilitates the insertion of new property listings with validation to ensure data integrity.
+- **User Authentication**: Supports secured user registration and login.
+- **Property Insertion**: Facilitates the insertion of new property listings with validation to ensure data integrity. Each listing is linked to the user who created it.
 - **Property Searching**: Enables property searches based on various criteria such as city, state, type, and custom identifiers, with optional sorting by price.
-- **Property Updating**: Allows updates to existing property listings by specifying the property's custom identifier and the fields to be updated.
-- **Property Deletion**: Supports the deletion of property listings from the database using the property's custom identifier.
+- **Property Updating**: Allows updates to existing property listings by specifying the property's custom identifier and the fields to be updated. Only the creator of a property can update their listings
+- **Property Deletion**: Supports the deletion of property listings from the database using the property's custom identifier. Only the creator of a property can delete their listings.
 - **Export Functionality**: Enables exporting search results into CSV or JSON formats for external use or analysis.
 - **Interactive Mode**: Provides an interactive mode for insert, search, update, and delete operations, guiding users through the process with prompts.
 
